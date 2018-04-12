@@ -1,0 +1,19 @@
+{
+  "name": "cadworx_integration",
+  "version": "1.0.0",
+  "description": "",
+  "main": "mapping.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^3.5.1",
+    "jmespath": "^0.15.0",
+    "jsdom": "^11.7.0",
+    "node-fetch": "^2.1.2",
+    "xml2js": "^0.4.19",
+    "xpath": "0.0.27"
+  }
+}

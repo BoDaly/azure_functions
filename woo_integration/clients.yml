@@ -1,0 +1,24 @@
+- staging_number: 0
+  client_name: Sparkleberry
+  client_contact_info:
+    first_name: Mandy
+    last_name: Graham
+    email: Mandy@sparkleberryink.com
+    phone: (404) 693-4727
+  street1: 5770 DUE WEST ROAD
+  street2:
+  city: POWDER SPRINGS
+  state: GA
+  country: US
+  zip: 30127
+  client_prod: https://www.sparkleberryink.com
+  client_staging: https://beta.sparkleberryink.com
+  #xid: 7 #production
+  xid: 14 #staging
+  prod_api_key: ck_ad4c99e9674d833731354651c70234eff4ada6e5
+  prod_api_secret: cs_35e1898670e36f71c5ee811040e68e98ae4e45c4
+  staging_api_key: ck_20396bcb88ec86769059c5033b8e7ead44790c20
+  staging_api_secret: cs_a682c02b4636806bea59b0e4f7a6c3f5ed337b63
+  #attribute_term_id: 1039 #production
+  attribute_term_id: 1040 #staging
+  active: true

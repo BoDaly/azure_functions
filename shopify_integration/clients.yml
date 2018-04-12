@@ -1,0 +1,22 @@
+- staging_number: 0
+  client_name: Norcinu Nine
+  client_contact_info:
+    first_name: Danny
+    last_name: Marcario
+    email: Danny.Marcario@fullgear.com
+    phone:
+  street1:
+  street2:
+  city: WEST VALLEY CITY
+  state: UT
+  country: US
+  zip: 84104
+  prod_store_name: fullgear-teamstore
+  staging_store_name: fullgear-teamstore
+  xid: 3
+  prod_api_key: 63be87787c40a1f18445c15418a0d2ad
+  prod_api_secret: b2f6b534b5277a466bc7caddb57743c4
+  staging_api_key: 63be87787c40a1f18445c15418a0d2ad
+  staging_api_secret: b2f6b534b5277a466bc7caddb57743c4
+  active: true
+  #attribute_term_id: 1040
