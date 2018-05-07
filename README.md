@@ -1,13 +1,13 @@
 # azure_functions
 ## Woo Commerce Non-Custom Product Setup
 
-1) Create Product Attributes
+<b>1) Create Product Attributes</b>
   - Sizes
     - XS,SM,MD,LG,XL,2X,3X,4X,5X,5X
   - Manufacturer
     - Full Gear
     
-2) Create Product
+<b>2) Create Product</b>
   - Sku
     - [FABRIC]-[STYLE]-SUB-[Design Name] (e.g. PT-802S-SUB-REDCLUB)
     - Fabric, Style and SUB must be Uppercase and must not vary from product catalog.
