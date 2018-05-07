@@ -1,5 +1,5 @@
 # azure_functions
-## Woo Commerce Product Setup
+## Woo Commerce Non-Custom Product Setup
 
 1) Create Product Attributes
   - Sizes
