@@ -30,7 +30,7 @@ module.exports = class CronosBatch{
 
   addLineItem(clientOrder,products){
     var orderInfo = {
-      "external_id": clientOrder.id,
+      "external_id": clientOrder.number,
       "order_date": clientOrder.date_modified,
       "purchase_order_number": clientOrder.order_key,
       "production_label":"blank",
@@ -85,7 +85,7 @@ module.exports = class CronosBatch{
             "external_pdf_url": "",
             "external_sku": item.sku,
             "price": item.price,
-            "meta_data": {"meta_array":item.meta_data}
+            "meta_data": ""
           }
           orderInfo.order_items_attributes.push(lineItem)
         }
