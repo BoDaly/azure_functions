@@ -1,19 +1,21 @@
 const ShopifyAPI = require('shopify-api-node')
 const fetch = require('node-fetch')
-const CronosBatch = require('./cronos-batch')
+const cronosBatch = require('./cronos-batch')
 const YAML = require('yamljs')
 const fs = require('fs')
 const moment = require('moment')
-const cronosEndPoint = "http://cronos-staging.herokuapp.com/api/v1/orders/?email=softwareadmin@fullgear.com&auth_token=861a42ed-d30d-4e03-9d66-59c2a97699a8"
+const stagingEndPoint = "http://cronos-staging.herokuapp.com/api/v1/orders/?email=softwareadmin@fullgear.com&auth_token=861a42ed-d30d-4e03-9d66-59c2a97699a8"
+const cronosEndPoint = "https://portal.fullgear.com/api/v1/orders/?email=softwareadmin@fullgear.com&auth_token=416da16d-5d41-4001-96db-5dd6448d6e45"
 const staging = {};
-staging.on = true
-staging.local = true
-staging.number = 0
+staging.on = false
+staging.local = false
+staging.number = 2
 let context;
 if(staging.local === true){
   context = console
 }
-azureFunction()
+//azureFunction()
+
 function setFilterDate(type){
   const now = moment().format("YYYY-MM-DDTHH:mm:ss")
   const yesterday = moment(now).subtract(1,'days').format("YYYY-MM-DDTHH:mm:ss")
@@ -35,10 +37,18 @@ function setFilterDate(type){
 // Load Client Info Config (YAML)
 // Iterate through Clients and .
 // Get Client Orders since yesterday.
-function azureFunction(){
-//module.exports = function(context,myTimer){
-  const filterDate = setFilterDate()
-  const clientInfo = loadClient(context)
+//function azureFunction(){
+  module.exports = function(context,myTimer){
+  const filterDate = setFilterDate()//"2018-06-25T00:00:00"
+  let clientInfo;
+  loadClient((err,res)=>{
+    if(err){
+      context.log(err)
+    }else{
+      clientInfo = res
+    }
+  })
+
   for(i=0;i<clientInfo.length;i++){
     let currentClient;
     if(staging.on === true){
@@ -67,10 +77,11 @@ function azureFunction(){
         Promise.all(allPromises).then((promises) => {
           return makeBatch(promises[0],promises[1],filterDate,currentClient,context)
         }).then((result) => {
-
-          fetch(cronosEndPoint, {
+          let endPoint;
+          if(staging.on === true){endPoint = stagingEndPoint}else{endpoint = cronosEndPoint}
+          fetch(endPoint, {
           method: 'POST',
-          body: JSON.stringify(result.data),
+          body: JSON.stringify(result),
           headers: {
           'Content-Type': 'application/json',
           //'X-Api-Key': "ddd7204996f9a182",
@@ -98,27 +109,25 @@ function azureFunction(){
       }
     }
   }
-  if(staging.local !== true){
+  if(staging.local !== true || staging.on !== true){
     context.done()
   }
 
 }
 
-
-
-
-function loadClient(context){
+function loadClient(callback){
   if(staging.local === true){
     try {
-      return YAML.load('clients.yml');
+      callback(null,YAML.load('clients.yml'));
     } catch (e) {
-      context.log("YAML-load: "+e)
+      callback("YAML-load: "+e)
     }
-  }
-  try {
-    return YAML.load('D:\\home\\site\\wwwroot\\shopify-integration\\clients.yml');
-  } catch (e) {
-    context.log("YAML-load: "+e)
+  }else{
+    try {
+      callback(null, YAML.load('D:\\home\\site\\wwwroot\\shopify-integration\\clients.yml'));
+    } catch (e) {
+      callback("YAML-load: "+e)
+    }
   }
 }
 
@@ -211,12 +220,14 @@ function makeBatch(productsPromise,ordersPromise,filterDate,currentClient,contex
       if(fgOrders.length<1){
         reject(`There are no new Client Orders by ${currentClient.client_name} between ${setFilterDate()} and ${moment().format("YYYY-MM-DDTHH:mm:ss")}`)
       }else{
-        let cronosBatch = new CronosBatch(fgOrders,currentClient,productsPromise,context)
-        if(cronosBatch === undefined){
-          reject(`${currentClient.client_name}: Something went wrong in the CronosBatch object`)
-        }else {
-          resolve(cronosBatch)
-        }
+        cronosBatch(fgOrders,currentClient,productsPromise,context,(res)=>{
+          if(res === undefined){
+            reject(`${currentClient.client_name}: Something went wrong in the CronosBatch object`)
+          }else {
+            //context.log(res.orders[0].order_items_attributes)
+            resolve(res)
+          }
+        })
       }
     }
   })
@@ -227,7 +238,8 @@ function findFullGearOrders(clientOrders){
   for (let order of clientOrders) {
     let breaker = false
     for (let item of order.line_items){
-      let verifier = item.fulfillment_service.toLowerCase().replace(/[\!\@\#\$\ \%\^\&\*\(\)\_\+\\\-\=\[\]\{\}\|\:\;\'\"\,\.\<\>\?\/]/g, "")
+      let verifier;
+      if(item.vendor) verifier = item.vendor.toLowerCase().replace(/[\!\@\#\$\ \%\^\&\*\(\)\_\+\\\-\=\[\]\{\}\|\:\;\'\"\,\.\<\>\?\/]/g, "")
       if(verifier === "fullgear"){
         fgOrders.push(order)
         breaker = true

@@ -9,6 +9,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.18.2",
+    "fetch": "^1.1.0",
+    "isarray": "^2.0.4",
+    "isobject": "^3.0.1",
     "moment": "^2.20.1",
     "node": "^9.4.0",
     "node-fetch": "^1.7.3",

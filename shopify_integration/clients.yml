@@ -14,9 +14,55 @@
   prod_store_name: fullgear-teamstore
   staging_store_name: fullgear-teamstore
   xid: 3
+  #xid:2 #production
   prod_api_key: 63be87787c40a1f18445c15418a0d2ad
   prod_api_secret: b2f6b534b5277a466bc7caddb57743c4
   staging_api_key: 63be87787c40a1f18445c15418a0d2ad
   staging_api_secret: b2f6b534b5277a466bc7caddb57743c4
+  active: false
+
+- staging_number: 1
+  client_name: Styles R Hot
+  client_contact_info:
+    first_name: Jodie
+    last_name: Cox
+    email: jodiecox10@gmail.com
+    phone: 801-783-7979
+  street1:
+  street2:
+  city:
+  state: UT
+  country: US
+  zip:
+  prod_store_name: stylesrhot
+  staging_store_name: stylesrhot
+  #xid: 19 #staging
+  xid: 88 #production
+  prod_api_key: a4a82aae8a7be663678cfe202e351aea
+  prod_api_secret: 1194448472483b1f4824eb278a6fb36a
+  staging_api_key: a4a82aae8a7be663678cfe202e351aea
+  staging_api_secret: 1194448472483b1f4824eb278a6fb36a
   active: true
-  #attribute_term_id: 1040
+
+- staging_number: 2
+  client_name: IAQV
+  client_contact_info:
+    first_name: Todd
+    last_name: Hennessy
+    email: todd@fitconutah.com
+    phone: 555-555-5555
+  street1:
+  street2:
+  city:
+  state: UT
+  country: US
+  zip:
+  prod_store_name: iaqv-custom
+  staging_store_name: iaqv-custom
+  xid: 16 #staging
+  #xid: 88 #production
+  prod_api_key: e1cefec17297ef5cd1220f25589e7d9f
+  prod_api_secret: 16430697d3a61453a1c4eb9fea322912
+  staging_api_key: e1cefec17297ef5cd1220f25589e7d9f
+  staging_api_secret: 16430697d3a61453a1c4eb9fea322912
+  active: false
