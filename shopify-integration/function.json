@@ -1,0 +1,11 @@
+{
+  "bindings": [
+    {
+      "name": "myTimer",
+      "type": "timerTrigger",
+      "direction": "in",
+      "schedule": "0 59 7 * * SUN,MON,TUE,WED,THU"
+    }
+  ],
+  "disabled": false
+}

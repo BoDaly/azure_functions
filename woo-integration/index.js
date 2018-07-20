@@ -34,7 +34,7 @@ function setFilterDate(type){
 //function azureFunction(){
 module.exports = function(context,myTimer){
   context.log(staging)
-  const filterDate = setFilterDate("browser")
+  const filterDate = setFilterDate()
   const clientInfo = loadClient(context)
   for(i=0;i<clientInfo.length;i++){
     let currentClient;
@@ -85,6 +85,7 @@ function loadClient(context){
 
 function makeBatch(WooCommerce,filterDate,termId,currentClient,context){
   let products;
+  context.log(termId)
   WooCommerce.get(`products?attribute=pa_manufacturer&attribute_term=${termId}&per_page=100`, function(err, data, res) {
     products = JSON.parse(data.body)
     context.log("Full Gear Products: "+products.length)
