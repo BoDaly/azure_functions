@@ -1,3 +1,4 @@
+debugger;
 const ShopifyAPI = require('shopify-api-node')
 const fetch = require('node-fetch')
 const cronosBatch = require('./cronos-batch')
@@ -7,8 +8,8 @@ const moment = require('moment')
 const stagingEndPoint = "http://cronos-staging.herokuapp.com/api/v1/orders/?email=softwareadmin@fullgear.com&auth_token=861a42ed-d30d-4e03-9d66-59c2a97699a8"
 const cronosEndPoint = "https://portal.fullgear.com/api/v1/orders/?email=softwareadmin@fullgear.com&auth_token=416da16d-5d41-4001-96db-5dd6448d6e45"
 const staging = {};
-staging.on = false
-staging.local = false
+staging.on = true
+staging.local = true
 staging.number = 2
 let context;
 if(staging.local === true){
@@ -39,7 +40,7 @@ function setFilterDate(type){
 // Get Client Orders since yesterday.
 //function azureFunction(){
   module.exports = function(context,myTimer){
-  const filterDate = setFilterDate()//"2018-06-25T00:00:00"
+  const filterDate = "2018-07-27T00:00:00"//setFilterDate()
   let clientInfo;
   loadClient((err,res)=>{
     if(err){
@@ -73,10 +74,13 @@ function setFilterDate(type){
         apiKey: apiKey,
         password: apiSecret
       });
-      promiseGatherer(Shopify,filterDate,currentClient).then((allPromises) => {
-        Promise.all(allPromises).then((promises) => {
+      promiseGatherer(Shopify,filterDate,currentClient)
+      .then((allPromises) => {
+        return Promise.all(allPromises)
+        .then((promises) => {
           return makeBatch(promises[0],promises[1],filterDate,currentClient,context)
-        }).then((result) => {
+        })
+        .then((result) => {
           let endPoint;
           if(staging.on === true){endPoint = stagingEndPoint}else{endpoint = cronosEndPoint}
           fetch(endPoint, {
@@ -87,23 +91,22 @@ function setFilterDate(type){
           //'X-Api-Key': "ddd7204996f9a182",
           //'X-Secret-Key': "dQGxO_XIBEPq2bB0FKy8eg"
           }
-          }).then((response) => {
+          })
+          .then((response) => {
           context.log("STATUS: "+JSON.stringify(response.status))
           //context.done()
-          }).catch((error) => {
+          })
+          .catch((error) => {
           //context.log('--catch--')
           context.log("Cronos Import Error: "+error)
           //context.done()
           });
 
-        }).catch((error) => {
-          context.log("Promises: "+error);
         })
-      }).then((response) => {
-        context.log("Resolve: "+response);
-      }).catch((error) => {
-        context.log("Function Error: "+error);
+        .catch((error) => {context.log("Promises: "+error);})
       })
+      .then((response) => {context.log("Resolve: "+response);})
+      .catch((error) => {context.log("Function Error: "+error);})
       if(staging.on === true){
         break
       }
@@ -118,7 +121,7 @@ function setFilterDate(type){
 function loadClient(callback){
   if(staging.local === true){
     try {
-      callback(null,YAML.load('clients.yml'));
+      callback(null,YAML.load('//src/azure_functions/shopify-integration/clients.yml'));
     } catch (e) {
       callback("YAML-load: "+e)
     }
