@@ -54,11 +54,11 @@ module.exports = function (context, req) {
           let properties = cleanProperties(request.properties)
           decorate(result.Model.Items[0].Cdl,properties,(result)=>{
             requestPDF(result,request.fileName,(err,result)=> {
-              fileUrl = result
+              fileUrl = {"url":result}
               context.res={
                 error:err||null,
                 result:(result)?"success":"fail",
-                body:fileUrl
+                body:JSON.stringify(fileUrl)
               }
               context.done();
             })
@@ -77,13 +77,14 @@ module.exports = function (context, req) {
             context.done();
           }else{
             let fileUrl;
-            getTemplateCdl(result,request,(err,result)=>{
+            getTemplateCdl(result,request,fileName,(err,result,msg)=>{
+              context.log(msg)
               requestPDF(result,fileName,(err,result)=>{
-                fileUrl = result
+                fileUrl = {"url":result}
                 context.res={
                   error:err||null,
                   result:(result)?"success":"fail",
-                  body:fileUrl
+                  body:JSON.stringify(fileUrl)
                 }
                 context.done();
               })
@@ -148,7 +149,7 @@ function getCDL(docId,callback){
     .then(json => callback(json.Model.Cdl))
 }
 
-function getTemplateCdl(customInfo,orderInfo,callback){
+function getTemplateCdl(customInfo,orderInfo,fileName,callback){
   const url = 'https://fullgearub.cadworxase.p.azurewebsites.net/Core2/Doc/Search'
   const body = {
     'config':"FullgearUB",
@@ -177,12 +178,37 @@ function getTemplateCdl(customInfo,orderInfo,callback){
   }).then(res => res.json())
     .then((json) => { parseString(json.Model.Items[0].Cdl,{attrkey:"Attr"},(err,result) =>{
       //getEditPaths(customInfo,result)
+      let msg;
       reconcileCdl(customInfo,result)
+      splitAltFab(result,fileName,(res)=>{
+        msg = res
+        let builder = new xml2js.Builder({attrkey:"Attr"})
+        let cdl = builder.buildObject(result)
+        callback(null,cdl,msg)
+      })
       //console.log(result);
-      let builder = new xml2js.Builder({attrkey:"Attr"})
-      let cdl = builder.buildObject(result)
-      callback(null,cdl)
     })})
+}
+
+function splitAltFab(cdl,fileName,callback){
+  if(cdl.Cdl.Document){
+    let index = 0;
+    for(let layer of cdl.Cdl.Document[0].Layers[0].Layer){
+      if(layer.Attr && layer.Attr.Name === "alt_fab"){
+        let newCdl = {Cdl:layer.Figures[0]}
+        let builder = new xml2js.Builder({attrkey:"Attr"})
+        let altFab = builder.buildObject(newCdl)
+        delete cdl.Cdl.Document[0].Layers[0].Layer[index];
+        requestPDF(altFab,fileName+"_altfab",(res) => {
+          callback('!---- Alternate Fabric Exported ----!')
+        })
+      }
+      index ++
+    }
+    callback('!---- No Alternate Fabric Found ----!')
+  }else{
+    callback('!---- No Alternate Fabric Found ----!')
+  }
 }
 
 function reconcileCdl(customInfo,originalCdl){
@@ -210,18 +236,113 @@ function reconcileCdl(customInfo,originalCdl){
   }
 }
 
+function checkOrientation(matrix){
+  let currentOrientation;
+  switch(true){
+    case(matrix[0] > 0 && matrix[1] == 0 && matrix[2] == 0 && matrix[3] > 0):
+      currentOrientation = 0
+      break;
+    case(matrix[0] == 0 && matrix[1] > 0 && matrix[2] < 0 && matrix[3] == 0):
+      currentOrientation = 90
+      break;
+    case(matrix[0] < 0 && matrix[1] == 0 && matrix[2] == 0 && matrix[3] < 0):
+      currentOrientation = 180
+      break;
+    case(matrix[0] == 0 && matrix[1] < 0 && matrix[2] > 0 && matrix[3] == 0):
+      currentOrientation = 270
+  }
+  return currentOrientation
+}
+
+function orientationTransform(transform,orientation){
+  let transformValue = transform.reduce((total,num) => { return Math.abs(total) + Math.abs(num)})/2
+  switch(true){
+    case(orientation == 0):
+    return [transformValue,0,0,transformValue]
+    case(orientation == 90):
+    return [0,transformValue,-transformValue,0]
+    case(orientation == 180):
+    return [-transformValue,0,0,-transformValue]
+    case(orientation == 270):
+    return [0,-transformValue,transformValue,0]
+  }
+}
+
+function multiplyMatrixAndPoint(matrix, point) {
+
+  //Give a simple variable name to each part of the matrix, a column and row number
+  var c0r0 = matrix[ 0], c1r0 = matrix[ 1];
+  var c0r1 = matrix[ 2], c1r1 = matrix[ 3];
+
+  //Now set some simple names for the point
+  var x = point[0];
+  var y = point[1];
+
+  //Multiply the point against each part of the 1st column, then add together
+  var resultX = (x * c0r0) + (y * c0r1);
+
+  //Multiply the point against each part of the 2nd column, then add together
+  var resultY = (x * c1r0) + (y * c1r1);
+
+  return [resultX, resultY];
+}
+
+function multiplyMatrices(matrixA, matrixB) {
+  // Slice the second matrix up into columns
+  var column0 = [matrixB[0], matrixB[2]];
+  var column1 = [matrixB[1], matrixB[3]];
+
+  // Multiply each column by the matrix
+  var result0 = multiplyMatrixAndPoint(matrixA, column0);
+  var result1 = multiplyMatrixAndPoint(matrixA, column1);
+
+  // Turn the result columns back into a single matrix
+  return [
+    result0[0], result1[0],
+    result0[1], result1[1]
+  ];
+}
+
+function updateOrientation(shape,decoration){
+  let shapeTransform = []
+  shape.Transform[0].Attr.Matrix22.split(",").forEach((a) => {
+    shapeTransform.push(Number.parseFloat(a,10))
+  })
+  let decoTransform = []
+  decoration.content[0].Transform[0].Attr.Matrix22.split(",").forEach((a) => {
+    decoTransform.push(Number.parseFloat(a,10))
+  })
+  let shapeOrientation = checkOrientation(shapeTransform)
+  decoration.content[0].Transform[0].Attr.Matrix22 = orientationTransform(decoTransform,shapeOrientation)
+
+}
+
 function updatePositions(decoration,originalCdl){
-  if(decoration.type && decoration.type === "Logo" || decoration.type && decoration.type === "Text"){
+  if(decoration.type && decoration.type === "Logo" || decoration.type && decoration.type === "Clipart" || decoration.type && decoration.type === "Text"){
     for(let shape of originalCdl.Cdl.Shape){
-      if(shape.Attr.DecorationAreaName && shape.Attr.DecorationAreaName === decoration.name){
+      if(shape.Attr && shape.Attr.DecorationAreaName && shape.Attr.DecorationAreaName === decoration.name){
         decoration.content[0].Pin[0].Attr.X = shape.Pin[0].Attr.X
         decoration.content[0].Pin[0].Attr.Y = shape.Pin[0].Attr.Y
+        updateOrientation(shape,decoration)
       }
     }
   }
 }
 
 function updateRegions(customInfo,cdl){
+  if(cdl.Cdl.Document){
+    for(let layer of cdl.Cdl.Document[0].Layers[0].Layer){
+      for(let shape of layer.Figures[0].Shape){
+        for(let i = 0;i < customInfo.document.regions.length; i++){
+          if(shape.Attr && shape.Attr.ZoneName && shape.Attr.ZoneName == customInfo.document.regions[i].regionName){
+            for(let region of shape.Polyregion){
+              region.Brush[0].Color[0].Attr = customInfo.document.regions[i].color
+            }
+          }
+        }
+      }
+    }
+  }else{
     for(let shape of cdl.Cdl.Shape){
       for(let i = 0;i < customInfo.document.regions.length; i++){
         if(shape.Attr && shape.Attr.ZoneName && shape.Attr.ZoneName == customInfo.document.regions[i].regionName){
@@ -231,7 +352,7 @@ function updateRegions(customInfo,cdl){
         }
       }
     }
-
+  }
 }
 
 function requestPDF(cdl,fileName,callback){
