@@ -1,5 +1,6 @@
 const fetch = require('node-fetch')
 const bodyParser = require('body-parser')
+const stage = true
 module.exports = function cronosBatch(clientOrders,client,products,context,callback){
 
   let data = {
@@ -32,7 +33,7 @@ module.exports = function cronosBatch(clientOrders,client,products,context,callb
   function addOrder(clientOrders,products,callback){
     let orders = []
     var orderInfo = {
-      "external_id": clientOrders[0].order_number,
+      "external_id": stage == false?clientOrders[0].order_number:clientOrders[0].order_number+"test5",
       "order_date": clientOrders[0].created_at,
       "purchase_order_number": null,
       "production_label":"blank",
@@ -59,9 +60,11 @@ module.exports = function cronosBatch(clientOrders,client,products,context,callb
       if(clientOrders.length !== 0){
         addOrder(clientOrders,products,(res)=>{
           orders = orders.concat(res)
+          callback(orders)
         })
+      }else{
+        callback(orders)
       }
-      callback(orders)
     })
   }
   function getMetaDataObject(properties){
@@ -106,7 +109,7 @@ module.exports = function cronosBatch(clientOrders,client,products,context,callb
                       variant:variant,
                       bundle_list:bundleList,
                       meta_data:meta,
-                      file_name:clientOrder.order_number+"_"+lineItemCount
+                      file_name:clientOrder.order_number+"_"+item.sku+"_"+lineItemCount
                     }
                     lineItemRequest.push(lineItemParams)
                   }
@@ -154,7 +157,7 @@ module.exports = function cronosBatch(clientOrders,client,products,context,callb
               variant:null,
               bundle_list:null,
               meta_data:meta,
-              file_name:clientOrder.order_number+"_"+lineItemCount
+              file_name:clientOrder.order_number+"_"+item.sku+"_"+size+"_"+lineItemCount
             }
             lineItemRequest.push(lineItemParams)
           }
@@ -171,7 +174,7 @@ module.exports = function cronosBatch(clientOrders,client,products,context,callb
       let lineItems = [];
       let lineItem;
       let pdfUrl;
-      if(result) pdfUrl = result.body
+      if(result) pdfUrl = result.url
       if (params[0].bundle_list && params[0].bundle_list.length>0){
         lineItem = {
           "type": type,
@@ -239,9 +242,10 @@ module.exports = function cronosBatch(clientOrders,client,products,context,callb
         type = "nocustom"
       }
       if(type === "teamstore" || type === "builder"){
-        const url = 'https://sfg-integration.azurewebsites.net/api/CobblerElf?code=3fFvSgogHxt0r7qcTZDVSWqzhzwlSlpfN5hpfnzBn6wi5SY2HD/Y6g=='
+        //const url = 'https://sfg-integration.azurewebsites.net/api/CobblerElf?code=3fFvSgogHxt0r7qcTZDVSWqzhzwlSlpfN5hpfnzBn6wi5SY2HD/Y6g=='
+        const url = 'http://localhost:7071/api/CobblerElf'
         const body = {
-          "store": client.client_name.replace(/[\`~!@#$%^&*\(\)-_=+\{\}\[\]\\|;:\'\"<>,.?\/]/g,""),
+          "store": client.client_name.replace(/[\`\~\!\@\#\$\%\^\&\*\(\)\-\_\=\+\{\}\[\]\\\|\;\:\'\"\<\>\,\.\?\/]/g,""),
           "type": type,
           "docId": docId,
           "size": size,
@@ -256,7 +260,7 @@ module.exports = function cronosBatch(clientOrders,client,products,context,callb
           'method': 'POST',
           'body': JSON.stringify(body),
           'headers': {
-            'Content-Type':'application/json'
+            'Content-Type':'application/json; charset=utf-8'
           }
         }).then(res => res.json())
           .then(json => callback(null,json,type))
